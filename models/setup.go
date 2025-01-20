@@ -8,10 +8,10 @@ import (
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	database, err := gorm.Open(mysql.Open("root:@tcp(localhost:3307)/uaspwd"))
+	db, err := gorm.Open(mysql.Open("root:@tcp(localhost:3307)/perpusgoo"))
 	if err != nil {
-		return
+		panic(err)
 	}
-	database.AutoMigrate(&Buku{}, &Kategori{})
-	DB = database
+	db.AutoMigrate(&Buku{}, &Kategori{}, &User{})
+	DB = db
 }

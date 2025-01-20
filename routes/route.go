@@ -5,4 +5,6 @@ import "github.com/gin-gonic/gin"
 func Initiate(api *gin.RouterGroup) {
 	kategori := api.Group("/kategoris")
 	RouteKategori(kategori)
+	auth := api.Group("/auth")
+	RouteAuth(auth)
 }
