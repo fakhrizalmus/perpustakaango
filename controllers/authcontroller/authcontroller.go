@@ -2,10 +2,10 @@ package authcontroller
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/fakhrizalmus/perpustakaango/common"
-	"github.com/fakhrizalmus/perpustakaango/config"
 	model "github.com/fakhrizalmus/perpustakaango/models"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -35,6 +35,7 @@ func Login(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, common.APIResponse{
 				Status:  false,
 				Message: "Email salah",
+				Error:   err.Error(),
 			})
 			return
 		default:
@@ -51,23 +52,20 @@ func Login(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, common.APIResponse{
 			Status:  false,
 			Message: "Password salah",
+			Error:   err.Error(),
 		})
 		return
 	}
 
 	// proses jwt
-	expTime := time.Now().Add(time.Minute * 1)
-	claims := config.JWTUserData{
-		Username: user.Username,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "perpustakaango",
-			ExpiresAt: jwt.NewNumericDate(expTime),
-		},
-	}
+	expTime := time.Now().Add(time.Hour)
 
-	tokenAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.ID,
+		"exp": jwt.NewNumericDate(expTime),
+	})
 	//signed token
-	token, err := tokenAlgo.SignedString(config.JWT_KEY)
+	tokenString, err := tokenAlgo.SignedString([]byte(os.Getenv("JWT_KEY")))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, common.APIResponse{
 			Status:  false,
@@ -75,7 +73,7 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
-	c.SetCookie("token", token, 3600, "/", "", false, true)
+	c.SetCookie("Authorization", tokenString, 3600, "/", "", false, true)
 
 	c.JSON(200, gin.H{
 		"message": "Cookie set successfully",
@@ -83,7 +81,7 @@ func Login(c *gin.Context) {
 }
 
 func Logout(c *gin.Context) {
-	c.SetCookie("token", "", -1, "/", "", false, true)
+	c.SetCookie("Authorization", "", -1, "/", "", false, true)
 	c.JSON(200, gin.H{
 		"message": "Logout successfully",
 	})
